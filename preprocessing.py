@@ -8,13 +8,15 @@ import request
 import glob
 import errno
 import urllib3
+import sys
 from nltk import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import LancasterStemmer, WordNetLemmatizer
 from pprint import pprint
 
 def main():
-	print("Hello Word!")
+	print("This is the Text Preprocessing Script")
+	print(sys.version)
 		
 
 #Remove non ASCII words from a tokenized list.
