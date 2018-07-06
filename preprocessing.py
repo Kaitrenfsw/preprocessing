@@ -15,7 +15,29 @@ from nltk.corpus import stopwords
 from nltk.stem import LancasterStemmer, WordNetLemmatizer
 from pprint import pprint
 
+
+
+def callback(ch, method, properties, body):
+    pprint(" [x] Received %r" % body)
+
+
+
 def main():
+
+	connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq-docker'))
+	channel = connection.channel()
+
+
+	channel.queue_declare(queue='hello')
+
+	channel.basic_consume(callback,
+	                      queue='hello',
+	                      no_ack=True)
+
+	print(' [*] Waiting for messages. To exit press CTRL+C')
+	channel.start_consuming()
+
+
 	print("This is the Text Preprocessing Script")
 	print(sys.version)
 		
