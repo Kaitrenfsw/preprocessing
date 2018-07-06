@@ -24,7 +24,15 @@ def callback(ch, method, properties, body):
 
 def main():
 
-	connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq-docker'))
+	connected = False
+
+	while(not connected):
+		try:
+			connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq-docker'))
+			connected = True
+		except:
+			pass
+
 	channel = connection.channel()
 
 
