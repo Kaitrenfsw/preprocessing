@@ -10,16 +10,73 @@ import errno
 import urllib3
 import sys
 import pika
+import datetime
 from nltk import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import LancasterStemmer, WordNetLemmatizer
 from pprint import pprint
 
+# Test variables:
+example_message = '''
+{
+	"date": "2018-7-10 00:41:35",
+	"doc_count": 1,
+	"documents": [
+		{
+			"title": "Document Title",
+			"url": "https://www.google.com/search?q=hola+mundo",
+			"site": "https://www.google.com",
+			"site_name": "Google",
+			"published": "2018-7-10 00:41:35",
+			"main_image": "image url",
+			"text": "Twitter has shut down up to 70 million fake and suspicious accounts since May, according to the Washington Post. The suspensions and shutdowns were part of a concerted effort by Twitter to clear up the platform, said the paper. Many of the accounts are thought to be used by trolls or remotely controlled bots that abuse the service.\nTwitter declined to comment on the Post story but said it was making an effort to improve public conversation on the social network.\nCat and mouse\nJuan Guzman, a researcher at UCL who has exposed hundreds of thousands of bots on social media, said Twitter had neglected tackling automatic tweet generators for years.\nUntil recently, Twitter did not think bots were a problem on its platform and did not lead a strong bot-detection effort, he told the BBC.\nIt was only after Brexit and the 2016 election, where these bots became a liability and Twitter, as well as Facebook began taking them seriously.\nDel Harvey, Twitter's head of trust and safety, told the paper that it was now erring more on the side of preserving safety rather than supporting free speech at all costs.\nOne of the biggest shifts is in how we think about balancing free expression versus the potential for free expression to chill someone else's speech, said Ms Harvey.\nFree expression doesn't really mean much if people don't feel safe, she said."
+		}
+	]
+}
+'''
+
+def new_main():
+	data = json.loads(example_message.replace('\n', ' '))
+
+	text = data["documents"][0]["text"]
+	words = nltk.word_tokenize(text)
+	words = pre_processing_text(words)
+	lemmas = lemmatize_verbs(words)
+
+	text = " ".join(lemmas)
+	data["documents"][0]["text"] = text
+	json_data = json.dumps(data)
+
+	pprint(json_data)
+
+	http = urllib3.PoolManager()
+	r = http.request('POST', 'http://procesamiento:8000/ldamodel/', body=json_data, headers={'Content-Type': 'application/json'})
+
+	pprint(r.status)
+	pprint(r.data)	
 
 
 def callback(ch, method, properties, body):
     pprint(" [x] Received %r" % body)
 
+    data = json.loads(body)
+    n_docs = data["doc_count"]
+    
+    for doc in data["documents"]:
+    	text = doc["text"]
+    	words = nltk.word_tokenize(text)
+		words = pre_processing_text(words)
+		lemmas = lemmatize_verbs(words)
+
+		text = " ".join(lemmas)
+		doc["text"] = text
+
+	json_data = json.dumps(data)
+	http = urllib3.PoolManager()
+	r = http.request('POST', 'http://procesamiento:8000/ldamodel/', body=json_data, headers={'Content-Type': 'application/json'})
+
+	pprint(r.status)
+	pprint(r.data)	
 
 
 def main():
@@ -34,7 +91,6 @@ def main():
 			pass
 
 	channel = connection.channel()
-
 
 	channel.queue_declare(queue='hello')
 
@@ -131,4 +187,4 @@ def pre_processing_text(words):
 	return words
 
 if __name__ == "__main__":
-	main()
+	new_main()
