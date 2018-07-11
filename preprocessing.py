@@ -187,4 +187,4 @@ def pre_processing_text(words):
 	return words
 
 if __name__ == "__main__":
-	new_main()
+	main()
