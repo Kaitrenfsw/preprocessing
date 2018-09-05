@@ -7,17 +7,6 @@ services:
       - .:/code
     networks:
       - shared
-
-  rabbitmq-docker:
-    image: rabbitmq:3.7.3-management
-    container_name: rabbitmq-docker
-    ports:
-    - "15672:15672"
-    volumes:
-    - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq.conf:ro
-    - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
-    networks:
-      - shared
       
 networks:
   shared: 
