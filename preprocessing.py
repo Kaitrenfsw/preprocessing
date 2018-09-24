@@ -24,11 +24,66 @@ def callback(ch, method, properties, body):
 	new_id = body.decode("utf-8")
 	pprint(new_id)
 
+	# create request filters
+
+	r_filter = {"type": "match", "field": "_id"}
+	r_filter['value'] = new_id
+	filters = [r_filter]
+
 	# GET document from RAW_DATA with new_id
+
+	http = urllib3.PoolManager()
+	r = http.request('GET', 'http://raw_data:4000/api/documents', fields = {"filters": filters})
+
+	json_response = json.loads(r.data)
+	new_document = json_response['documents']['records'][0]
+
+	print(new_document['title'])
 
 	# preprocess text from document
 
+	text = new_document['raw_text']
+	words = nltk.word_tokenize(text)
+	words = pre_processing_text(words)
+	lemmas = lemmatize_verbs(words)
+
+	text = " ".join(lemmas)
+
+	# create document with clean text
+
+	document = {}
+	document['title'] = new_document['title']
+	document['url'] = new_document['url']
+	document['source_name'] = new_document['source_name']
+	document['source_id'] = new_document['source_id']
+	document['published'] = new_document['published']
+	document['main_image'] = new_document['main_image']
+	document['summary'] = new_document['summary']
+
+	document['clean_text'] = text
+
+	message = {}
+	message['document'] = document
+
 	# POST clean document to CORPUS
+
+	json_message = json.dumps(message)
+
+	r = http.request('POST', 'http://corpus_data:4000/api/documents', body=json_message, headers={'Content-Type': 'application/json'})
+
+	# get id from saved document
+
+	json_response = json.loads(r.data)
+	saved_doc = json_response['document']
+	saved_id = saved_doc['id']
+
+	id_message = {}
+	id_message['new_id'] = saved_id
+	json_id_message = json.dumps(id_message)
+
+	# POST saved id to Processing
+
+	r = http.request('POST', 'http://processing:8000/newclassification/', body=json_id_message, headers={'Content-Type': 'application/json'})
 
 	#n_docs = data["doc_count"]
 
