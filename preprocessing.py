@@ -20,24 +20,33 @@ from pprint import pprint
 def callback(ch, method, properties, body):
 	pprint(" [x] Received %r" % body)
 
-	data = json.loads(body)
-	n_docs = data["doc_count"]
+	#data = json.loads(body)
+	new_id = body.decode("utf-8")
+	pprint(new_id)
 
-	for doc in data["documents"]:
-		text = doc["text"]
-		words = nltk.word_tokenize(text)
-		words = pre_processing_text(words)
-		lemmas = lemmatize_verbs(words)
+	# GET document from RAW_DATA with new_id
 
-		text = " ".join(lemmas)
-		doc["text"] = text
+	# preprocess text from document
 
-	json_data = json.dumps(data)
-	http = urllib3.PoolManager()
-	r = http.request('POST', 'http://procesamiento:8000/ldamodel/', body=json_data, headers={'Content-Type': 'application/json'})
+	# POST clean document to CORPUS
 
-	pprint(r.status)
-	pprint(r.data)	
+	#n_docs = data["doc_count"]
+
+	#for doc in data["documents"]:
+	#	text = doc["text"]
+	#	words = nltk.word_tokenize(text)
+	#	words = pre_processing_text(words)
+	#	lemmas = lemmatize_verbs(words)
+
+	#	text = " ".join(lemmas)
+	#	doc["text"] = text
+
+	#json_data = json.dumps(data)
+	#http = urllib3.PoolManager()
+	#r = http.request('POST', 'http://procesamiento:8000/ldamodel/', body=json_data, headers={'Content-Type': 'application/json'})
+
+	#pprint(r.status)
+	#pprint(r.data)	
 
 
 def main():
@@ -53,10 +62,10 @@ def main():
 
 	channel = connection.channel()
 
-	channel.queue_declare(queue='hello')
+	channel.queue_declare(queue='preprocessing_queue')
 
 	channel.basic_consume(callback,
-	                      queue='hello',
+	                      queue='preprocessing_queue',
 	                      no_ack=True)
 
 	print(' [*] Waiting for messages. To exit press CTRL+C')
