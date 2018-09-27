@@ -1,0 +1,6 @@
+pytz==2018.4
+urllib3
+nltk
+contractions
+request
+pika
