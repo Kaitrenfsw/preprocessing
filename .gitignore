@@ -21,6 +21,7 @@ data/
 .docker-data/
 
 fixtures/
+loader/
 
 # Ignore Byebug command history file.
 .byebug_history
