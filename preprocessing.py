@@ -20,24 +20,88 @@ from pprint import pprint
 def callback(ch, method, properties, body):
 	pprint(" [x] Received %r" % body)
 
-	data = json.loads(body)
-	n_docs = data["doc_count"]
+	#data = json.loads(body)
+	new_id = body.decode("utf-8")
+	pprint(new_id)
 
-	for doc in data["documents"]:
-		text = doc["text"]
-		words = nltk.word_tokenize(text)
-		words = pre_processing_text(words)
-		lemmas = lemmatize_verbs(words)
+	# create request filters
 
-		text = " ".join(lemmas)
-		doc["text"] = text
+	r_filter = {"type": "match", "field": "_id"}
+	r_filter['value'] = new_id
+	filters = [r_filter]
 
-	json_data = json.dumps(data)
+	# GET document from RAW_DATA with new_id
+
 	http = urllib3.PoolManager()
-	r = http.request('POST', 'http://procesamiento:8000/ldamodel/', body=json_data, headers={'Content-Type': 'application/json'})
+	r = http.request('GET', 'http://raw_data:4000/api/documents', fields = {"filters": filters})
 
-	pprint(r.status)
-	pprint(r.data)	
+	json_response = json.loads(r.data)
+	new_document = json_response['documents']['records'][0]
+
+	print(new_document['title'])
+
+	# preprocess text from document
+
+	text = new_document['raw_text']
+	words = nltk.word_tokenize(text)
+	words = pre_processing_text(words)
+	lemmas = lemmatize_verbs(words)
+
+	text = " ".join(lemmas)
+
+	# create document with clean text
+
+	document = {}
+	document['title'] = new_document['title']
+	document['url'] = new_document['url']
+	document['source_name'] = new_document['source_name']
+	document['source_id'] = new_document['source_id']
+	document['published'] = new_document['published']
+	document['main_image'] = new_document['main_image']
+	document['summary'] = new_document['summary']
+
+	document['clean_text'] = text
+
+	message = {}
+	message['document'] = document
+
+	# POST clean document to CORPUS
+
+	json_message = json.dumps(message)
+
+	r = http.request('POST', 'http://corpus_data:4000/api/documents', body=json_message, headers={'Content-Type': 'application/json'})
+
+	# get id from saved document
+
+	json_response = json.loads(r.data)
+	saved_doc = json_response['document']
+	saved_id = saved_doc['id']
+
+	id_message = {}
+	id_message['new_id'] = saved_id
+	json_id_message = json.dumps(id_message)
+
+	# POST saved id to Processing
+
+	r = http.request('POST', 'http://processing:8000/newclassification/', body=json_id_message, headers={'Content-Type': 'application/json'})
+
+	#n_docs = data["doc_count"]
+
+	#for doc in data["documents"]:
+	#	text = doc["text"]
+	#	words = nltk.word_tokenize(text)
+	#	words = pre_processing_text(words)
+	#	lemmas = lemmatize_verbs(words)
+
+	#	text = " ".join(lemmas)
+	#	doc["text"] = text
+
+	#json_data = json.dumps(data)
+	#http = urllib3.PoolManager()
+	#r = http.request('POST', 'http://procesamiento:8000/ldamodel/', body=json_data, headers={'Content-Type': 'application/json'})
+
+	#pprint(r.status)
+	#pprint(r.data)	
 
 
 def main():
@@ -53,10 +117,10 @@ def main():
 
 	channel = connection.channel()
 
-	channel.queue_declare(queue='hello')
+	channel.queue_declare(queue='preprocessing_queue')
 
 	channel.basic_consume(callback,
-	                      queue='hello',
+	                      queue='preprocessing_queue',
 	                      no_ack=True)
 
 	print(' [*] Waiting for messages. To exit press CTRL+C')
