@@ -1,0 +1,14 @@
+version: '3'
+
+services: 
+  preprocessing:
+    build: .
+    volumes:
+      - .:/code
+    networks:
+      - shared
+      
+networks:
+  shared: 
+    external:
+      name: shared
