@@ -22,6 +22,8 @@ data/
 
 fixtures/
 loader/
+auto_dataset/
+clasificadas/
 
 # Ignore Byebug command history file.
 .byebug_history

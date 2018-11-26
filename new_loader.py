@@ -217,3 +217,27 @@ for file_path in files:
 
 # FINISH - LOAD NEW DATASET:
 
+# START - LOAD CATEGORIZED DATA:
+
+http = urllib3.PoolManager()
+
+path = 'clasificadas/*.json'
+files = glob.glob(path)
+
+for file_path in files:
+    try:
+        with open(file_path, mode='r') as new:
+            new_dict = json.load(new)
+            encoded_data = json.dumps(new_dict).encode('utf-8')
+
+            # POST Request to categorized-data service
+            request_3 = http.request('POST', 'http://categorized_data:4000/api/documents/',
+                                     body=encoded_data,
+                                     headers={'Content-Type': 'application/json'})
+            print(request_3.status)
+            new_dict = dict()
+    except IOError as exc:
+        if exc.errno != errno.EISDIR:  # Do not fail if a directory is found, just ignore it.
+            raise
+
+# FINISH - LOAD CATEGORIZED DATA:
